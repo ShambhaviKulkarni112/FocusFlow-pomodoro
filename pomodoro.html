@@ -1,0 +1,1127 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocusFlow – Pomodoro Study Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Indie+Flower&display=swap" rel="stylesheet">
+    <!-- Chart.js from CDN for simple bar chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Base styles and reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --pastel-green: #d0e7d2;
+            --cream: #fff9f0;
+            --light-yellow: #fff3c4;
+            --soft-pink: #ffd6e0;
+            --dark-pastel-green: #a8c8a6;
+            --accent-pink: #ffafc1;
+            --text-dark: #3a4a3a;
+            --text-light: #5a6a5a;
+        }
+
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: linear-gradient(135deg, var(--pastel-green) 0%, var(--cream) 100%);
+            color: var(--text-dark);
+            min-height: 100vh;
+            padding: 20px;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(255, 214, 224, 0.15) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(255, 243, 196, 0.15) 0%, transparent 20%);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 1rem;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            color: var(--dark-pastel-green);
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            letter-spacing: -0.5px;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+        }
+
+        /* Mascot section */
+        .mascot-section {
+            flex: 1;
+            min-width: 280px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem;
+        }
+
+        .mascot-illustration {
+            background: var(--cream);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 220px;
+            width: 100%;
+        }
+
+        .mascot {
+            font-size: 6rem;
+            line-height: 1;
+        }
+
+        .encouragement {
+            font-family: 'Indie Flower', cursive;
+            font-size: 1.4rem;
+            text-align: center;
+            color: var(--dark-pastel-green);
+            background: var(--light-yellow);
+            padding: 12px 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            margin-top: 1rem;
+        }
+
+        /* Main content section */
+        .main-content {
+            flex: 2;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 1.8rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            margin-bottom: 1.2rem;
+            color: var(--dark-pastel-green);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title i {
+            font-size: 1.1rem;
+        }
+
+        /* Timer section */
+        .timer-card {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .timer-display {
+            font-size: 4rem;
+            font-weight: 700;
+            margin: 1rem 0;
+            font-family: 'Quicksand', sans-serif;
+            letter-spacing: -1px;
+            color: var(--text-dark);
+        }
+
+        .session-label {
+            font-family: 'Indie Flower', cursive;
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            color: var(--dark-pastel-green);
+        }
+
+        .timer-controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 50px;
+            font-family: 'Quicksand', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1rem;
+            min-width: 100px;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .btn-start { background: var(--pastel-green); color: var(--text-dark); }
+        .btn-pause { background: var(--light-yellow); color: var(--text-dark); }
+        .btn-resume { background: var(--pastel-green); color: var(--text-dark); }
+        .btn-reset { background: var(--soft-pink); color: var(--text-dark); }
+        .btn-export { background: var(--accent-pink); color: white; }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 12px;
+            background: var(--cream);
+            border-radius: 6px;
+            margin: 1.5rem 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.5s ease;
+        }
+
+        /* Settings section */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        @media (max-width: 500px) {
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .setting-item label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        .setting-item input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid var(--pastel-green);
+            border-radius: 12px;
+            font-family: 'Quicksand', sans-serif;
+            font-size: 1rem;
+        }
+
+        /* Subjects section */
+        .subjects-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 1rem;
+        }
+
+        .subject-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 50px;
+            background: var(--pastel-green);
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .subject-pill.active {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .subject-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .subject-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 1rem;
+        }
+
+        .subject-input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid var(--pastel-green);
+            border-radius: 12px;
+            font-family: 'Quicksand', sans-serif;
+        }
+
+        /* History and Stats */
+        .history-filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            background: var(--cream);
+            border: 2px solid var(--pastel-green);
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: 'Quicksand', sans-serif;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn.active, .filter-btn:hover {
+            background: var(--pastel-green);
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .history-table th, .history-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--pastel-green);
+        }
+
+        .history-table th {
+            color: var(--dark-pastel-green);
+            font-weight: 600;
+        }
+
+        .subject-color-cell {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .stats-summary {
+            display: flex;
+            justify-content: space-between;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .stat-item {
+            background: var(--cream);
+            padding: 1rem;
+            border-radius: 16px;
+            text-align: center;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--dark-pastel-green);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        .chart-container {
+            height: 250px;
+            margin-top: 1.5rem;
+        }
+
+        /* Warning message */
+        .warning {
+            background: var(--soft-pink);
+            color: #d0003a;
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 1rem 0;
+            display: none;
+        }
+
+        /* Footer instructions */
+        .instructions {
+            margin-top: 3rem;
+            padding: 2rem;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .instructions h2 {
+            color: var(--dark-pastel-green);
+            margin-bottom: 1rem;
+        }
+
+        .instructions ul {
+            padding-left: 1.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .instructions li {
+            margin-bottom: 0.5rem;
+            color: var(--text-light);
+        }
+
+        /* Session type color variants */
+        .focus-mode {
+            border-top: 5px solid var(--dark-pastel-green);
+        }
+
+        .short-break-mode {
+            border-top: 5px solid var(--light-yellow);
+        }
+
+        .long-break-mode {
+            border-top: 5px solid var(--accent-pink);
+        }
+
+        .progress-focus { background: var(--pastel-green); }
+        .progress-short { background: var(--light-yellow); }
+        .progress-long { background: var(--accent-pink); }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>FocusFlow – Pomodoro Study Tracker</h1>
+    </header>
+
+    <div class="container">
+        <!-- Left side: Mascot and encouragement -->
+        <div class="mascot-section">
+            <div class="mascot-illustration">
+                <div class="mascot">🍰🐱</div>
+            </div>
+            <div class="encouragement">You've got this! Take it one pomodoro at a time!</div>
+        </div>
+
+        <!-- Right side: Main content -->
+        <div class="main-content">
+            <!-- Timer Card -->
+            <div class="card timer-card" id="timerCard">
+                <div class="session-label" id="sessionLabel">Focus Time</div>
+                <div class="timer-display" id="timerDisplay">25:00</div>
+                <div class="progress-container">
+                    <div class="progress-bar progress-focus" id="progressBar"></div>
+                </div>
+                <div class="timer-controls">
+                    <button class="btn btn-start" id="startBtn">Start</button>
+                    <button class="btn btn-pause" id="pauseBtn" disabled>Pause</button>
+                    <button class="btn btn-resume" id="resumeBtn" disabled>Resume</button>
+                    <button class="btn btn-reset" id="resetBtn">Reset</button>
+                </div>
+                <div class="warning" id="noSubjectWarning">
+                    Please select a subject before starting a focus session!
+                </div>
+            </div>
+
+            <!-- Settings -->
+            <div class="card">
+                <h2 class="card-title">Settings</h2>
+                <div class="settings-grid">
+                    <div class="setting-item">
+                        <label for="focusDuration">Focus Duration (minutes)</label>
+                        <input type="number" id="focusDuration" min="1" max="60" value="25">
+                    </div>
+                    <div class="setting-item">
+                        <label for="shortBreakDuration">Short Break (minutes)</label>
+                        <input type="number" id="shortBreakDuration" min="1" max="30" value="5">
+                    </div>
+                    <div class="setting-item">
+                        <label for="longBreakDuration">Long Break (minutes)</label>
+                        <input type="number" id="longBreakDuration" min="1" max="60" value="15">
+                    </div>
+                    <div class="setting-item">
+                        <label for="sessionsBeforeLongBreak">Sessions before Long Break</label>
+                        <input type="number" id="sessionsBeforeLongBreak" min="1" max="10" value="4">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subjects -->
+            <div class="card">
+                <h2 class="card-title">Subjects</h2>
+                <div class="subjects-list" id="subjectsList">
+                    <!-- Subject pills will be generated here -->
+                </div>
+                <div class="subject-actions">
+                    <input type="text" class="subject-input" id="newSubjectInput" placeholder="Add new subject...">
+                    <button class="btn btn-start" id="addSubjectBtn">Add</button>
+                </div>
+            </div>
+
+            <!-- History and Stats -->
+            <div class="card">
+                <h2 class="card-title">Session History</h2>
+                <div class="history-filters">
+                    <button class="filter-btn active" data-filter="today">Today</button>
+                    <button class="filter-btn" data-filter="week">This Week</button>
+                    <button class="filter-btn" data-filter="month">This Month</button>
+                    <button class="filter-btn" data-filter="all">All Time</button>
+                    <button class="btn btn-export" id="exportBtn">Export CSV</button>
+                </div>
+                <div class="stats-summary">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalFocusMinutes">0</div>
+                        <div class="stat-label">Total Minutes</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="todayVsYesterday">-</div>
+                        <div class="stat-label">Today vs Yesterday</div>
+                    </div>
+                </div>
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Date/Time</th>
+                            <th>Subject</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <!-- History rows will be generated here -->
+                    </tbody>
+                </table>
+                <div class="chart-container">
+                    <canvas id="statsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="instructions">
+        <h2>How to Use FocusFlow</h2>
+        <ul>
+            <li><strong>Start studying:</strong> Select a subject, then click "Start" to begin a focus session (25 minutes by default).</li>
+            <li><strong>Take breaks:</strong> After each focus session, you'll automatically get a short break (5 minutes). After 4 focus sessions, you'll get a long break (15 minutes).</li>
+            <li><strong>Customize:</strong> Adjust focus/break durations in the Settings section.</li>
+            <li><strong>Track progress:</strong> Your sessions are automatically logged in the History section with subject and duration.</li>
+            <li><strong>Manage subjects:</strong> Add, select, or remove subjects to organize your study topics.</li>
+            <li><strong>Export </strong> Click "Export CSV" to download all your session records for backup or analysis.</li>
+        </ul>
+    </div>
+
+    <script>
+        // ======================
+        // DATA STRUCTURES
+        // ======================
+
+        // Default data structures
+        let subjects = [
+            { id: 1, name: "DSA", color: "#4CAF50" },
+            { id: 2, name: "OS", color: "#2196F3" },
+            { id: 3, name: "DBMS", color: "#FF9800" },
+            { id: 4, name: "Math", color: "#9C27B0" },
+            { id: 5, name: "Projects", color: "#E91E63" }
+        ];
+
+        let sessions = [];
+        let currentSubjectId = null;
+        let currentSessionCount = 0;
+
+        // Timer configuration
+        let timer = {
+            focus: 25,
+            shortBreak: 5,
+            longBreak: 15,
+            sessionsBeforeLongBreak: 4
+        };
+
+        // Timer state
+        let timerState = {
+            isRunning: false,
+            isPaused: false,
+            currentType: 'focus', // 'focus', 'short', 'long'
+            timeLeft: 25 * 60, // in seconds
+            originalTime: 25 * 60,
+            intervalId: null
+        };
+
+        // ======================
+        // DOM ELEMENTS
+        // ======================
+
+        const timerDisplay = document.getElementById('timerDisplay');
+        const sessionLabel = document.getElementById('sessionLabel');
+        const timerCard = document.getElementById('timerCard');
+        const progressBar = document.getElementById('progressBar');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resumeBtn = document.getElementById('resumeBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const noSubjectWarning = document.getElementById('noSubjectWarning');
+        const subjectsList = document.getElementById('subjectsList');
+        const newSubjectInput = document.getElementById('newSubjectInput');
+        const addSubjectBtn = document.getElementById('addSubjectBtn');
+        const historyTableBody = document.getElementById('historyTableBody');
+        const totalFocusMinutesEl = document.getElementById('totalFocusMinutes');
+        const todayVsYesterdayEl = document.getElementById('todayVsYesterday');
+        const exportBtn = document.getElementById('exportBtn');
+        const filterBtns = document.querySelectorAll('.filter-btn[data-filter]');
+
+        // Settings inputs
+        const focusDurationInput = document.getElementById('focusDuration');
+        const shortBreakDurationInput = document.getElementById('shortBreakDuration');
+        const longBreakDurationInput = document.getElementById('longBreakDuration');
+        const sessionsBeforeLongBreakInput = document.getElementById('sessionsBeforeLongBreak');
+
+        // Chart
+        let statsChart = null;
+
+        // ======================
+        // LOCAL STORAGE HELPERS
+        // ======================
+
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('focusflow_subjects', JSON.stringify(subjects));
+            localStorage.setItem('focusflow_sessions', JSON.stringify(sessions));
+            localStorage.setItem('focusflow_timer', JSON.stringify(timer));
+            localStorage.setItem('focusflow_currentSubjectId', JSON.stringify(currentSubjectId));
+            localStorage.setItem('focusflow_currentSessionCount', JSON.stringify(currentSessionCount));
+        }
+
+        // Load data from localStorage
+        function loadData() {
+            const savedSubjects = localStorage.getItem('focusflow_subjects');
+            const savedSessions = localStorage.getItem('focusflow_sessions');
+            const savedTimer = localStorage.getItem('focusflow_timer');
+            const savedCurrentSubjectId = localStorage.getItem('focusflow_currentSubjectId');
+            const savedCurrentSessionCount = localStorage.getItem('focusflow_currentSessionCount');
+
+            if (savedSubjects) subjects = JSON.parse(savedSubjects);
+            if (savedSessions) sessions = JSON.parse(savedSessions);
+            if (savedTimer) timer = JSON.parse(savedTimer);
+            if (savedCurrentSubjectId) currentSubjectId = JSON.parse(savedCurrentSubjectId);
+            if (savedCurrentSessionCount) currentSessionCount = JSON.parse(savedCurrentSessionCount);
+        }
+
+        // ======================
+        // TIMER LOGIC
+        // ======================
+
+        // Update timer display
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timerState.timeLeft / 60);
+            const seconds = timerState.timeLeft % 60;
+            timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Update progress bar
+            const progress = ((timerState.originalTime - timerState.timeLeft) / timerState.originalTime) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+
+        // Set timer type and update UI
+        function setTimerType(type) {
+            timerState.currentType = type;
+            
+            // Update timer values based on type
+            if (type === 'focus') {
+                timerState.timeLeft = timer.focus * 60;
+                sessionLabel.textContent = 'Focus Time';
+                timerCard.className = 'card timer-card focus-mode';
+                progressBar.className = 'progress-bar progress-focus';
+            } else if (type === 'short') {
+                timerState.timeLeft = timer.shortBreak * 60;
+                sessionLabel.textContent = 'Short Break';
+                timerCard.className = 'card timer-card short-break-mode';
+                progressBar.className = 'progress-bar progress-short';
+            } else if (type === 'long') {
+                timerState.timeLeft = timer.longBreak * 60;
+                sessionLabel.textContent = 'Long Break';
+                timerCard.className = 'card timer-card long-break-mode';
+                progressBar.className = 'progress-bar progress-long';
+            }
+            
+            timerState.originalTime = timerState.timeLeft;
+            updateTimerDisplay();
+        }
+
+        // Start timer
+        function startTimer() {
+            if (timerState.currentType === 'focus' && currentSubjectId === null) {
+                noSubjectWarning.style.display = 'block';
+                return;
+            }
+            noSubjectWarning.style.display = 'none';
+            
+            if (timerState.isRunning) return;
+            
+            timerState.isRunning = true;
+            timerState.isPaused = false;
+            
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+            resumeBtn.disabled = true;
+            resetBtn.disabled = false;
+            
+            timerState.intervalId = setInterval(() => {
+                if (timerState.timeLeft <= 0) {
+                    clearInterval(timerState.intervalId);
+                    timerState.isRunning = false;
+                    
+                    // Handle session completion
+                    if (timerState.currentType === 'focus') {
+                        // Log the completed focus session
+                        logSession();
+                        
+                        // Move to break
+                        currentSessionCount++;
+                        if (currentSessionCount % timer.sessionsBeforeLongBreak === 0) {
+                            setTimerType('long');
+                        } else {
+                            setTimerType('short');
+                        }
+                    } else {
+                        // Break completed, back to focus
+                        setTimerType('focus');
+                    }
+                    
+                    // Auto-start the next session
+                    startTimer();
+                    return;
+                }
+                
+                timerState.timeLeft--;
+                updateTimerDisplay();
+            }, 1000);
+        }
+
+        // Pause timer
+        function pauseTimer() {
+            if (!timerState.isRunning) return;
+            
+            clearInterval(timerState.intervalId);
+            timerState.isRunning = false;
+            timerState.isPaused = true;
+            
+            pauseBtn.disabled = true;
+            resumeBtn.disabled = false;
+        }
+
+        // Resume timer
+        function resumeTimer() {
+            if (!timerState.isPaused) return;
+            
+            startTimer();
+        }
+
+        // Reset timer
+        function resetTimer() {
+            clearInterval(timerState.intervalId);
+            timerState.isRunning = false;
+            timerState.isPaused = false;
+            
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            resumeBtn.disabled = true;
+            resetBtn.disabled = false;
+            
+            // Reset to focus mode
+            setTimerType('focus');
+        }
+
+        // ======================
+        // SESSION LOGGING
+        // ======================
+
+        // Log a completed focus session
+        function logSession() {
+            const now = new Date();
+            const session = {
+                id: Date.now().toString(),
+                subjectId: currentSubjectId,
+                subjectName: subjects.find(s => s.id === currentSubjectId)?.name || 'Unknown',
+                subjectColor: subjects.find(s => s.id === currentSubjectId)?.color || '#999',
+                durationMinutes: timer.focus,
+                startTime: new Date(now - (timer.focus * 60 * 1000)).toISOString(),
+                endTime: now.toISOString(),
+                sessionType: 'Focus'
+            };
+            
+            sessions.unshift(session);
+            saveData();
+            renderHistory();
+            updateStats();
+        }
+
+        // ======================
+        // SUBJECTS MANAGEMENT
+        // ======================
+
+        // Render subjects list
+        function renderSubjects() {
+            subjectsList.innerHTML = '';
+            
+            subjects.forEach(subject => {
+                const pill = document.createElement('div');
+                pill.className = `subject-pill ${currentSubjectId === subject.id ? 'active' : ''}`;
+                pill.innerHTML = `
+                    <span class="subject-color" style="background-color: ${subject.color}"></span>
+                    ${subject.name}
+                `;
+                pill.onclick = () => {
+                    currentSubjectId = subject.id;
+                    renderSubjects();
+                    saveData();
+                };
+                
+                // Add delete button (only if not the last subject)
+                if (subjects.length > 1) {
+                    const deleteBtn = document.createElement('span');
+                    deleteBtn.innerHTML = ' ×';
+                    deleteBtn.style.cursor = 'pointer';
+                    deleteBtn.style.marginLeft = '8px';
+                    deleteBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        if (confirm(`Delete subject "${subject.name}"?`)) {
+                            subjects = subjects.filter(s => s.id !== subject.id);
+                            if (currentSubjectId === subject.id) {
+                                currentSubjectId = subjects[0]?.id || null;
+                            }
+                            renderSubjects();
+                            saveData();
+                        }
+                    };
+                    pill.appendChild(deleteBtn);
+                }
+                
+                subjectsList.appendChild(pill);
+            });
+        }
+
+        // Add new subject
+        function addSubject() {
+            const name = newSubjectInput.value.trim();
+            if (!name) return;
+            
+            // Generate a random pastel color
+            const colors = ['#4CAF50', '#2196F3', '#FF9800', '#9C27B0', '#E91E63', '#00BCD4', '#FF5722', '#795548'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            const newSubject = {
+                id: Date.now(),
+                name: name,
+                color: randomColor
+            };
+            
+            subjects.push(newSubject);
+            newSubjectInput.value = '';
+            renderSubjects();
+            saveData();
+        }
+
+        // ======================
+        // HISTORY AND STATS
+        // ======================
+
+        // Filter sessions by date range
+        function filterSessions(filter) {
+            const now = new Date();
+            let filteredSessions = [];
+            
+            switch (filter) {
+                case 'today':
+                    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    filteredSessions = sessions.filter(s => new Date(s.startTime) >= today);
+                    break;
+                case 'week':
+                    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    filteredSessions = sessions.filter(s => new Date(s.startTime) >= weekAgo);
+                    break;
+                case 'month':
+                    const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+                    filteredSessions = sessions.filter(s => new Date(s.startTime) >= monthAgo);
+                    break;
+                case 'all':
+                default:
+                    filteredSessions = [...sessions];
+                    break;
+            }
+            
+            return filteredSessions;
+        }
+
+        // Render session history
+        function renderHistory(filter = 'today') {
+            const filteredSessions = filterSessions(filter);
+            historyTableBody.innerHTML = '';
+            
+            if (filteredSessions.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td colspan="3" style="text-align: center; color: var(--text-light);">No sessions yet</td>`;
+                historyTableBody.appendChild(row);
+                return;
+            }
+            
+            filteredSessions.forEach(session => {
+                const row = document.createElement('tr');
+                const startTime = new Date(session.startTime);
+                const formattedTime = startTime.toLocaleDateString() + ' ' + startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                row.innerHTML = `
+                    <td>${formattedTime}</td>
+                    <td>
+                        <span class="subject-color-cell" style="background-color: ${session.subjectColor}"></span>
+                        ${session.subjectName}
+                    </td>
+                    <td>${session.durationMinutes} min</td>
+                `;
+                historyTableBody.appendChild(row);
+            });
+            
+            // Update total focus minutes
+            const totalMinutes = filteredSessions.reduce((sum, s) => sum + s.durationMinutes, 0);
+            totalFocusMinutesEl.textContent = totalMinutes;
+        }
+
+        // Update statistics
+        function updateStats() {
+            renderHistory(); // Re-render with current filter
+            
+            // Calculate today vs yesterday
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+            
+            const todaySessions = sessions.filter(s => new Date(s.startTime) >= today);
+            const yesterdaySessions = sessions.filter(s => {
+                const sessionDate = new Date(s.startTime);
+                return sessionDate >= yesterday && sessionDate < today;
+            });
+            
+            const todayMinutes = todaySessions.reduce((sum, s) => sum + s.durationMinutes, 0);
+            const yesterdayMinutes = yesterdaySessions.reduce((sum, s) => sum + s.durationMinutes, 0);
+            
+            if (yesterdayMinutes > 0) {
+                const diff = todayMinutes - yesterdayMinutes;
+                const percentage = Math.round((diff / yesterdayMinutes) * 100);
+                todayVsYesterdayEl.textContent = `${diff >= 0 ? '+' : ''}${percentage}%`;
+                todayVsYesterdayEl.style.color = diff >= 0 ? '#4CAF50' : '#F44336';
+            } else {
+                todayVsYesterdayEl.textContent = 'New day!';
+                todayVsYesterdayEl.style.color = '#2196F3';
+            }
+            
+            // Update chart
+            updateChart();
+        }
+
+        // Update stats chart
+        function updateChart() {
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            const recentSessions = sessions.filter(s => new Date(s.startTime) >= weekAgo);
+            
+            // Group by subject
+            const subjectMinutes = {};
+            subjects.forEach(subject => {
+                subjectMinutes[subject.name] = 0;
+            });
+            
+            recentSessions.forEach(session => {
+                if (subjectMinutes[session.subjectName] !== undefined) {
+                    subjectMinutes[session.subjectName] += session.durationMinutes;
+                }
+            });
+            
+            const labels = Object.keys(subjectMinutes);
+            const data = Object.values(subjectMinutes);
+            const backgroundColors = labels.map(name => {
+                const subject = subjects.find(s => s.name === name);
+                return subject ? subject.color + '80' : '#99999980';
+            });
+            
+            // Destroy existing chart if it exists
+            if (statsChart) {
+                statsChart.destroy();
+            }
+            
+            const ctx = document.getElementById('statsChart').getContext('2d');
+            statsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Focus Minutes (Last 7 Days)',
+                         data,
+                        backgroundColor: backgroundColors,
+                        borderColor: labels.map(name => {
+                            const subject = subjects.find(s => s.name === name);
+                            return subject ? subject.color : '#999999';
+                        }),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#5a6a5a'
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#5a6a5a'
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // ======================
+        // EXPORT FUNCTIONALITY
+        // ======================
+
+        // Export sessions as CSV
+        function exportSessionsCSV() {
+            if (sessions.length === 0) {
+                alert('No sessions to export!');
+                return;
+            }
+            
+            // CSV headers
+            const headers = ['id', 'subject', 'durationMinutes', 'startTime', 'endTime', 'sessionType'];
+            const rows = sessions.map(session => [
+                session.id,
+                `"${session.subjectName}"`,
+                session.durationMinutes,
+                `"${session.startTime}"`,
+                `"${session.endTime}"`,
+                session.sessionType
+            ]);
+            
+            let csvContent = headers.join(',') + '\n';
+            csvContent += rows.map(row => row.join(',')).join('\n');
+            
+            // Create download link
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `focusflow_sessions_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // ======================
+        // EVENT LISTENERS
+        // ======================
+
+        // Timer controls
+        startBtn.addEventListener('click', startTimer);
+        pauseBtn.addEventListener('click', pauseTimer);
+        resumeBtn.addEventListener('click', resumeTimer);
+        resetBtn.addEventListener('click', resetTimer);
+
+        // Subject management
+        addSubjectBtn.addEventListener('click', addSubject);
+        newSubjectInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addSubject();
+        });
+
+        // History filters
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderHistory(btn.dataset.filter);
+            });
+        });
+
+        // Export button
+        exportBtn.addEventListener('click', exportSessionsCSV);
+
+        // Settings changes
+        [focusDurationInput, shortBreakDurationInput, longBreakDurationInput, sessionsBeforeLongBreakInput].forEach(input => {
+            input.addEventListener('change', () => {
+                timer.focus = parseInt(focusDurationInput.value) || 25;
+                timer.shortBreak = parseInt(shortBreakDurationInput.value) || 5;
+                timer.longBreak = parseInt(longBreakDurationInput.value) || 15;
+                timer.sessionsBeforeLongBreak = parseInt(sessionsBeforeLongBreakInput.value) || 4;
+                saveData();
+                
+                // If currently in focus mode, update the timer
+                if (timerState.currentType === 'focus') {
+                    setTimerType('focus');
+                }
+            });
+        });
+
+        // ======================
+        // INITIALIZATION
+        // ======================
+
+        // Load data and initialize
+        function init() {
+            loadData();
+            renderSubjects();
+            renderHistory();
+            updateStats();
+            
+            // Set initial timer values from saved settings
+            setTimerType('focus');
+        }
+
+        // Start the app
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
+```
